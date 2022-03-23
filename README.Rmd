@@ -1,0 +1,351 @@
+---
+title: "Police Budget Analysis (2018-2022)"
+author: "Mason Youngblood"
+date: "3/23/2022"
+output: github_document
+---
+
+This analysis was conducted for a collaborative article with [Andy Friedman](https://github.com/afriedman412).
+
+## Loading & Data Summary
+
+First, we'll set the working directory and load up all of the packages for the analysis.
+
+```{r, message = FALSE, warning = FALSE}
+#set workspace
+setwd("~/Documents/Work/Spring 2022/Police Budgets/police_budget_analysis_2018_2022")
+
+#load packages
+library(reshape2)
+library(fitdistrplus)
+library(brms)
+library(ggplot2)
+library(performance)
+```
+
+Next, we'll load in the data. We should also go ahead and subset to only include cities that include all five years of data.
+
+```{r}
+#load data
+data <- readxl::read_xlsx("police_budgets_2018_2022.xlsx")
+
+#subset and clean data
+data <- data[-which(is.na(data$p18) | is.na(data$gf18) | is.na(data$p19) | is.na(data$gf19) | is.na(data$p20) | is.na(data$gf20) | is.na(data$p21) | is.na(data$gf21) | is.na(data$p22) | is.na(data$gf22)), ]
+data <- data[, which(colnames(data) %in% c("state", "city", "p18", "gf18", "p19", "gf19", "p20", "gf20", "p21", "gf21", "p22", "gf22"))]
+colnames(data) <- c("state", "city", "p18", "g18", "p19", "g19", "p20", "g20", "p21", "g21", "p22", "g22")
+```
+
+Before doing anything else, let's just plot the average police budgets as a function of the average general fund budgets over time. The stacked plots below are cumulative, so the total height of combined bars is the total size of the average general fund in that year.
+
+```{r, echo = FALSE, fig.width = 5, fig.height = 4}
+#create summary data frame
+summary_data <- data.frame(Year = c(rep("2018", 2), rep("2019", 2), rep("2020", 2), rep("2021", 2), rep("2022", 2)),
+                           Category = rep(c("Police", "General"), 5),
+                           values = c(mean(data$p18), mean(data$g18)-mean(data$p18),
+                                      mean(data$p19), mean(data$g19)-mean(data$p19),
+                                      mean(data$p20), mean(data$g20)-mean(data$p20),
+                                      mean(data$p21), mean(data$g21)-mean(data$p21),
+                                      mean(data$p22), mean(data$g22)-mean(data$p22)))
+
+#plot stacked bar graph
+bar_plot <- ggplot(summary_data, aes(fill = Category, y = values, x = Year)) + geom_bar(position = "stack", stat = "identity") + 
+  theme_linedraw() + 
+  scale_y_continuous(breaks = c(0, 50000000, 100000000, 150000000, 200000000, 250000000), labels = c("$0", "$50M", "$100M", "$150M", "$200M", "$250M")) + ylab("Average Budget")
+
+#save and print
+ggsave("bar_plot.png", plot = bar_plot, width = 5, height = 4, dpi = 300)
+bar_plot
+```
+
+```{r, echo = FALSE, eval = FALSE}
+#create data frame for each example city and combine
+minneapolis_data <- data[which(data$city == "minneapolis"),]
+minneapolis_data <- data.frame(Year = c(rep("2018", 2), rep("2019", 2), rep("2020", 2), rep("2021", 2), rep("2022", 2)),
+                           Category = rep(c("Police", "General"), 5),
+                           values = c(mean(minneapolis_data$p18), mean(minneapolis_data$g18)-mean(minneapolis_data$p18),
+                                      mean(minneapolis_data$p19), mean(minneapolis_data$g19)-mean(minneapolis_data$p19),
+                                      mean(minneapolis_data$p20), mean(minneapolis_data$g20)-mean(minneapolis_data$p20),
+                                      mean(minneapolis_data$p21), mean(minneapolis_data$g21)-mean(minneapolis_data$p21),
+                                      mean(minneapolis_data$p22), mean(minneapolis_data$g22)-mean(minneapolis_data$p22)),
+                           City = rep("Minneapolis", 10))
+seattle_data <- data[which(data$city == "seattle"),]
+seattle_data <- data.frame(Year = c(rep("2018", 2), rep("2019", 2), rep("2020", 2), rep("2021", 2), rep("2022", 2)),
+                           Category = rep(c("Police", "General"), 5),
+                           values = c(mean(seattle_data$p18), mean(seattle_data$g18)-mean(seattle_data$p18),
+                                      mean(seattle_data$p19), mean(seattle_data$g19)-mean(seattle_data$p19),
+                                      mean(seattle_data$p20), mean(seattle_data$g20)-mean(seattle_data$p20),
+                                      mean(seattle_data$p21), mean(seattle_data$g21)-mean(seattle_data$p21),
+                                      mean(seattle_data$p22), mean(seattle_data$g22)-mean(seattle_data$p22)),
+                           City = rep("Seattle", 10))
+austin_data <- data[which(data$city == "austin"),]
+austin_data <- data.frame(Year = c(rep("2018", 2), rep("2019", 2), rep("2020", 2), rep("2021", 2), rep("2022", 2)),
+                           Category = rep(c("Police", "General"), 5),
+                           values = c(mean(austin_data$p18), mean(austin_data$g18)-mean(austin_data$p18),
+                                      mean(austin_data$p19), mean(austin_data$g19)-mean(austin_data$p19),
+                                      mean(austin_data$p20), mean(austin_data$g20)-mean(austin_data$p20),
+                                      mean(austin_data$p21), mean(austin_data$g21)-mean(austin_data$p21),
+                                      mean(austin_data$p22), mean(austin_data$g22)-mean(austin_data$p22)),
+                           City = rep("Austin", 10))
+cities_data <- rbind(minneapolis_data, seattle_data, austin_data)
+
+#create plot
+cities_plot <- ggplot(cities_data, aes(x = Year, y = values, fill = Category)) + geom_bar(stat = "identity", position = "stack") + 
+  facet_grid(cols = vars(City)) + theme_linedraw() + 
+  scale_y_continuous(breaks = c(0, 500000000, 1000000000, 1500000000), labels = c("$0", "$0.5B", "$1B", "$1.5B")) + ylab("Budget")
+
+#save plot
+ggsave("cities_plot.png", plot = cities_plot, width = 8, height = 4, dpi = 300)
+```
+
+Let's see whether the proportion spent on police scales in a meaningful way with the total general fund (log-transformed), using the data from 2019. For example, we might need to account for the fact that larger cities (like NYC and LA) hit a funding plateau for their police departments.
+
+```{r, echo = FALSE, fig.width = 4, fig.height = 4, message = FALSE, warning = FALSE}
+#temporary data frame with 2019 data
+temp_data <- data.frame(prop = data$p19/data$g19, overall = data$g19)
+
+#plot
+ggplot(temp_data, aes(x = overall, y = prop)) + geom_point() + scale_x_continuous(trans = "log2", labels = scales::label_number_si(accuracy = 0.1, prefix = "$")) + theme_linedraw() + 
+  geom_smooth(method = lm , color = "black", fill = "grey", se = TRUE) + xlab("Total General Fund (Log-Transformed)") + ylab("Proportion on Police")
+
+rm(temp_data)
+```
+
+It looks like there may be a slight negative trend between total general fund and proportion spent on police, so we'll control for it when we do the modeling.
+
+Now let's clean up the data and convert it from a wide to a long format.
+
+```{r}
+#convert cities and states to lower case
+data$city <- as.factor(tolower(data$city))
+data$state <- as.factor(tolower(data$state))
+
+#restructure to be proportion spent on police
+data_p <- data.frame(city = data$city, state = data$state, "2018" = data$p18/data$g18, "2019" = data$p19/data$g19, "2020" = data$p20/data$g20, "2021" = data$p21/data$g21, "2022" = data$p22/data$g22)
+
+#convert police data to long format
+data_p <- melt(data_p, id.vars = c("city", "state"))
+colnames(data_p) <- c("city", "state", "year", "police")
+data_p$year <- as.numeric(substr(data_p$year, 2, 5))
+
+#do the same for general fund data and combine
+data_g <- data.frame(city = data$city, state = data$state, "2018" = data$g18, "2019" = data$g19, "2020" = data$g20, "2021" = data$g21, "2022" = data$g22)
+data_g <- melt(data_g, id.vars = c("city", "state"))
+colnames(data_g) <- c("city", "state", "year", "general")
+data_g$year <- as.numeric(substr(data_g$year, 2, 5))
+
+#overwrite original data object
+data <- cbind(data_p, general = data_g$general)
+```
+
+Now let's take a look at the distribution of budgets across the five years to see if there are any obvious patterns in the data.
+
+```{r, echo = FALSE, fig.width = 4, fig.height = 4}
+#violin plot
+violin_plot <- ggplot(data, aes(x = as.factor(year), y = police, fill = as.factor(year))) + geom_violin() + 
+  theme_linedraw() + theme(legend.position = "none") + 
+  scale_y_continuous(labels = scales::percent_format()) + ylab("Percent on Police") + 
+  scale_x_discrete(labels = c("2018", "2019", "2020", "2021", "2022")) + xlab("Year")
+
+#save plots
+ggsave("violin_plot.png", plot = violin_plot, width = 4, height = 4, dpi = 300)
+
+#print
+violin_plot
+```
+
+```{r, echo = FALSE, eval = FALSE}
+#jitter plot
+jitter_plot <- ggplot(data, aes(x = as.factor(year), y = police, color = as.factor(year))) + geom_jitter(position = position_jitter(0.2)) + 
+  theme_linedraw() + theme(legend.position = "none") + 
+  scale_y_continuous(labels = scales::percent_format()) + ylab("Percent on Police") + 
+  scale_x_discrete(labels = c("2018", "2019", "2020", "2021", "2022")) + xlab("Year") +
+  stat_summary(fun = mean, geom = "point", size = 3, color = "black")
+
+#box plot
+box_plot <- ggplot(data, aes(x = as.factor(year), y = police, fill = as.factor(year))) + geom_boxplot() + 
+  theme_linedraw() + theme(legend.position = "none") + 
+  scale_y_continuous(labels = scales::percent_format()) + ylab("Percent on Police") + 
+  scale_x_discrete(labels = c("2018", "2019", "2020", "2021", "2022")) + xlab("Year")
+
+#save plots
+ggsave("jitter_plot.png", plot = jitter_plot, width = 4, height = 4, dpi = 300)
+ggsave("box_plot.png", plot = box_plot, width = 4, height = 4, dpi = 300)
+```
+
+## Assumption Check
+
+Now we should some check some of our assumptions. First, let's see whether the proportion data is normally distributed using a Shapiro-Wilk test.
+
+```{r}
+#shapiro test
+shapiro.test(data$police)
+```
+
+*p* < 0.05, which indicates that the data differs from a normal distribution. Since the data is composed of proportions a beta distribution is probably [more appropriate](https://rcompanion.org/handbook/J_02.html). Let's try it and see how it looks.
+
+```{r, fig.width = 7, fig.height = 7}
+#fit beta distribution
+fit.beta <- fitdist(data$police, distr = "beta")
+```
+
+```{r, echo = FALSE}
+#plotting beta
+par(mar = c(4.5, 4.5, 1.5, 1))
+plot(fit.beta)
+```
+
+The beta distribution fits quite well so we'll move forward with that.
+
+We should also determine whether `state` should be included as a random effect to account for state-level trends in spending. First, we will compare two simple models of the 2018 data using [leave-one-out cross validation](http://mc-stan.org/rstanarm/reference/loo.stanreg.html): the first will have `year` as a fixed effect and `city` as a random effect, and the second will have `year` as a fixed effect and `city` and `state` as nested random effects. Then, we will calculate the [variable decomposition based on the posterior predictive distribution](https://easystats.github.io/performance/reference/icc.html) for both models to see which one captures a higher ratio of the variance.
+
+```{r, eval = FALSE}
+#run random models
+brms_city <- brm(police ~ (1|city), data, family = "beta", iter = 20000, cores = 8)
+brms_state <- brm(police ~ (1|city) + (1|state), data, family = "beta", iter = 20000, cores = 8)
+
+#add leave-one-out criterion
+brms_city <- add_criterion(brms_city, "loo")
+brms_state <- add_criterion(brms_state, "loo")
+
+#save them
+save(brms_city, file = "brms_output/brms_city.RData")
+save(brms_state, file = "brms_output/brms_state.RData")
+```
+
+```{r, echo = FALSE}
+#load models
+load(file = "brms_output/brms_city.RData")
+load(file = "brms_output/brms_state.RData")
+```
+
+```{r}
+#compare models (elpd_diff = 0 is best)
+loo_compare(brms_city, brms_state)
+
+#see which one captures more of the variance
+variance_decomposition(brms_city)
+variance_decomposition(brms_state)
+```
+
+The model that includes both `city` and `state` has a better fit and accounts for more of the variance in the data, so we will move forward including both variables as random effects.
+
+## Modeling
+
+Let's go with a Bayesian non-linear mixed model assuming a beta distribution. The model will be run with the default priors for 20,000 iterations to ensure chain mixing. The proportion of the budget spent on `police` will be the outcome variable, `year` and the overall `general` fund (scaled) will be predictor variables, and `city` and `state` will be used as random effects to account for the repeated measures and state-level trends, respectively. We will run this model twice: once with `year` as a numeric variable to see if there is an overall time trend, and again with `year` as a factor variable to do pairwise comparisons.
+
+```{r, echo = FALSE}
+#turn off scientific notation
+options(scipen = 999)
+```
+
+Here is the first model:
+
+```{r, eval = FALSE}
+#run model and save data
+brms_num <- brm(police ~ year + scale(general) + (1|city) + (1|state), data, family = "beta", iter = 20000, cores = 8)
+save(brms_num, file = "brms_output/brms_num.RData")
+```
+
+```{r, echo = FALSE}
+#load data
+load("brms_output/brms_num.RData")
+```
+
+Let's take a look at the results!
+
+```{r, fig.width = 6, fig.height = 8}
+#print summary table
+print(summary(brms_num), digits = 4)
+
+#plot MCMC trace and density plots
+plot(brms_num, variable = c("b_Intercept", "b_year", "b_scalegeneral", "phi"))
+```
+
+The estimate for the effect of `year` on `police` is `r summary(brms_num)$fixed$Estimate[2]` with a 95% highest posterior density interval (HPDI) from `r summary(brms_num)$fixed$'l-95% CI'[2]` to `r summary(brms_num)$fixed$'u-95% CI'[2]`. In Bayesian models, HPDIs that do not overlap with 0 indicate that there is a significant effect. This means that there is a small but significant negative time trend in the police budgeting data, on the order of `r signif((1-exp(summary(brms_num)$fixed$Estimate[2]))*100, digits = 2)`% per year. Additionally, there appears to be a slightly significant negative effect of `general` on `police`, where cities with a general fund that is 1 SD higher spend around `r signif((1-exp(summary(brms_num)$fixed$Estimate[3]))*100, digits = 2)`% less per year. The MCMC trace and density plots show that the model has converged and the chains have adequate mixing.
+
+Now let's run the second model, where `year` is treated as a factor:
+
+```{r}
+#convert year to factor
+data$year <- as.factor(data$year)
+```
+
+```{r, eval = FALSE}
+#run model and save data
+brms_fac <- brm(police ~ year + scale(general) + (1|city) + (1|state), data, family = "beta", iter = 20000, cores = 8)
+save(brms_fac, file = "brms_output/brms_fac.RData")
+```
+
+```{r, echo = FALSE}
+#load data
+load("brms_output/brms_fac.RData")
+```
+
+```{r, fig.width = 6, fig.height = 10}
+#print summary table
+print(summary(brms_fac), digits = 4)
+
+#plot MCMC trace and density plots, just for the intercept and other years
+plot(brms_fac, variable = c("b_Intercept", "b_year2019", "b_year2020", "b_year2021", "b_year2022"))
+```
+
+```{r}
+#run hypothesis function for pairwise comparisons
+pairwise <- hypothesis(brms_fac, c("year2019 = 0",
+                                   "year2020 - year2019 = 0",
+                                   "year2021 - year2020 = 0",
+                                   "year2022 - year2021 = 0"))
+
+#return results
+print(pairwise)
+```
+
+This indicates that the slightly negative trend in `police` is driven by a significant difference of `r signif((1-exp(pairwise$hypothesis$Estimate[4]))*100, digits = 2)`% between 2021 and 2022.
+
+In summary, after accounting for state-level trends in spending and the overall general fund size, there is a slight negative trend of `r signif((1-exp(summary(brms_num)$fixed$Estimate[2]))*100, digits = 2)`% per year that is driven by a difference of `r signif((1-exp(pairwise$hypothesis$Estimate[4]))*100, digits = 2)`% between 2021 and 2022.
+
+## City-Level Differences
+
+Finally, let's see if this difference between 2021 is 2022 is based on a global trend, or whether it is caused by a small number of localities.
+
+```{r}
+#construct data frame of percent change in police between 2021 and 2022
+changes <- data.frame(city = data$city[which(data$year == 2021)], state = data$state[which(data$year == 2021)], police_2021 = data$police[which(data$year == 2021)], police_2022 = data$police[which(data$year == 2022)], diff = data$police[which(data$year == 2022)]-data$police[which(data$year == 2021)])
+```
+
+```{r, echo = FALSE, fig.width = 4, fig.height = 4}
+#plot changes as a histogram
+par(mar = c(4.5, 4.5, 1, 1))
+hist(changes$diff, main = NULL, xlab = "Difference in Police (2021-2022)", breaks = 40)
+```
+
+Based on the above histogram, it appears that the difference in the proportion spent on police between 2021 and 2022 is based on a slight global decrease rather than being skewed by a small number of cities. Let's look at the top 10 cities in terms of decrease.
+
+```{r}
+#reorder and look at top ten changes
+changes <- changes[order(changes$diff, decreasing = FALSE), ]
+changes[1:10,]
+```
+
+Okay, now let's check to see what the trend has been for general funds in the same period.
+
+```{r}
+#do the same for the overall general fund
+changes_gf <- data.frame(city = data$city[which(data$year == 2021)], state = data$state[which(data$year == 2021)], gf_2021 = data$general[which(data$year == 2021)], gf_2022 = data$general[which(data$year == 2022)], diff = data$general[which(data$year == 2022)]-data$general[which(data$year == 2021)])
+```
+
+```{r, echo = FALSE, fig.width = 4, fig.height = 4}
+#plot changes as a histogram
+par(mar = c(4.5, 4.5, 1, 1))
+hist(changes_gf$diff, main = NULL, xlab = "Difference in General Fund (2021-2022)", breaks = 120, xlim = c(-200000000, 200000000))
+```
+
+Based on the above histogram (which excludes a few extreme positive outliers, like Chicago), it appears that the difference in over general funds between 2021 and 2022 trends positive. Let's look at the top 10 cities in terms of increase.
+
+```{r}
+#reorder and look at top ten changes
+changes_gf <- changes_gf[order(changes_gf$diff, decreasing = TRUE), ]
+changes_gf[1:10,]
+```
+
+While there are several outliers like Chicago, Washington, and Philadelphia, it seems like the positive trend in general funds is relatively global.
