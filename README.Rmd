@@ -167,9 +167,28 @@ box_plot <- ggplot(data, aes(x = as.factor(year), y = police, fill = as.factor(y
   scale_y_continuous(labels = scales::percent_format()) + ylab("Percent on Police") + 
   scale_x_discrete(labels = c("2018", "2019", "2020", "2021", "2022")) + xlab("Year")
 
+#pct change violin plot
+data_2018 <- data[which(data$year == 2018), ]
+data_2019 <- data[which(data$year == 2019), ]
+data_2020 <- data[which(data$year == 2020), ]
+data_2021 <- data[which(data$year == 2021), ]
+data_2022 <- data[which(data$year == 2022), ]
+data_pct_change <- data.frame(city = c(rep(data_2018$city, 4)),
+                              year = c(rep("2018-2019", nrow(data_2018)), rep("2019-2020", nrow(data_2018)),
+                                       rep("2020-2021", nrow(data_2018)), rep("2021-2022", nrow(data_2018))),
+                              pct_change = c(data_2019$police-data_2018$police,
+                                             data_2020$police-data_2019$police,
+                                             data_2021$police-data_2020$police,
+                                             data_2022$police-data_2021$police))
+pct_change_violin_plot <- ggplot(data_pct_change, aes(x = as.factor(year), y = pct_change, fill = as.factor(year))) + geom_violin() + 
+  theme_linedraw() + theme(legend.position = "none") + 
+  scale_y_continuous(labels = scales::percent_format()) + ylab("Percent Change on Police") + xlab("Compared Years")
+rm(list = c("data_2018", "data_2019", "data_2020", "data_2021", "data_2022", "data_pct_change"))
+
 #save plots
 ggsave("jitter_plot.png", plot = jitter_plot, width = 4, height = 4, dpi = 300)
 ggsave("box_plot.png", plot = box_plot, width = 4, height = 4, dpi = 300)
+ggsave("pct_change_violin_plot.png", plot = pct_change_violin_plot, width = 4, height = 4, dpi = 300)
 ```
 
 ## Assumption Check
