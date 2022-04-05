@@ -21,6 +21,7 @@ library(fitdistrplus)
 library(brms)
 library(ggplot2)
 library(performance)
+library(cowplot)
 ```
 
 Next, we'll load in the data. We should also go ahead and subset to only include cities that include all five years of data.
@@ -38,23 +39,35 @@ colnames(data) <- c("state", "city", "p18", "g18", "p19", "g19", "p20", "g20", "
 Before doing anything else, let's just plot the average police budgets as a function of the average general fund budgets over time. The stacked plots below are cumulative, so the total height of combined bars is the total size of the average general fund in that year.
 
 ```{r, echo = FALSE, fig.width = 5, fig.height = 4}
-#create summary data frame
-summary_data <- data.frame(Year = c(rep("2018", 2), rep("2019", 2), rep("2020", 2), rep("2021", 2), rep("2022", 2)),
-                           Category = rep(c("Police", "General"), 5),
-                           values = c(mean(data$p18), mean(data$g18)-mean(data$p18),
-                                      mean(data$p19), mean(data$g19)-mean(data$p19),
-                                      mean(data$p20), mean(data$g20)-mean(data$p20),
-                                      mean(data$p21), mean(data$g21)-mean(data$p21),
-                                      mean(data$p22), mean(data$g22)-mean(data$p22)))
+#create summary data frames
+summary_data_a <- data.frame(Year = c(rep("2018", 2), rep("2019", 2), rep("2020", 2), rep("2021", 2), rep("2022", 2)),
+                             Category = rep(c("Police", "General"), 5),
+                             values = c(mean(data$p18), mean(data$g18)-mean(data$p18),
+                                        mean(data$p19), mean(data$g19)-mean(data$p19),
+                                        mean(data$p20), mean(data$g20)-mean(data$p20),
+                                        mean(data$p21), mean(data$g21)-mean(data$p21),
+                                        mean(data$p22), mean(data$g22)-mean(data$p22)))
+summary_data_b <- data.frame(Year = c("2018", "2019", "2020", "2021", "2022"),
+                             avg_percent = c(mean(data$p18/data$g18), mean(data$p19/data$g19), mean(data$p20/data$g20),
+                                             mean(data$p21/data$g21), mean(data$p22/data$g22)))
 
 #plot stacked bar graph
-bar_plot <- ggplot(summary_data, aes(fill = Category, y = values, x = Year)) + geom_bar(position = "stack", stat = "identity") + 
+bar_plot_a <- ggplot(summary_data_a, aes(fill = Category, y = values, x = Year)) + geom_bar(position = "stack", stat = "identity") + 
   theme_linedraw() + 
   scale_y_continuous(breaks = c(0, 50000000, 100000000, 150000000, 200000000, 250000000), labels = c("$0", "$50M", "$100M", "$150M", "$200M", "$250M")) + ylab("Average Budget")
 
-#save and print
-ggsave("bar_plot.png", plot = bar_plot, width = 5, height = 4, dpi = 300)
-bar_plot
+#plot basic bar graph
+bar_plot_b <- ggplot(summary_data_b, aes(y = avg_percent, x = Year)) + geom_bar(stat = "identity", fill = "#00BFC4") + 
+  theme_linedraw() + theme(legend.position = "none") + scale_y_continuous(labels = scales::percent_format()) + ylab("Percent on Police")
+
+#save bar combined bar graph
+png("bar_plot_combined.png", width = 9, height = 4, units = "in" , res = 300)
+plot_grid(bar_plot_a, bar_plot_b, rel_widths = c(1.28, 1), labels = c("A", "B"))
+dev.off()
+
+#save and print stacked bar graph
+ggsave("bar_plot.png", plot = bar_plot_a, width = 5, height = 4, dpi = 300)
+bar_plot_a
 ```
 
 ```{r, echo = FALSE, eval = FALSE}

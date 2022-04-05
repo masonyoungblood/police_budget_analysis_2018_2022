@@ -21,6 +21,7 @@ library(fitdistrplus)
 library(brms)
 library(ggplot2)
 library(performance)
+library(cowplot)
 ```
 
 Next, we’ll load in the data. We should also go ahead and subset to only
@@ -40,6 +41,9 @@ Before doing anything else, let’s just plot the average police budgets
 as a function of the average general fund budgets over time. The stacked
 plots below are cumulative, so the total height of combined bars is the
 total size of the average general fund in that year.
+
+    ## quartz_off_screen 
+    ##                 2
 
 ![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
