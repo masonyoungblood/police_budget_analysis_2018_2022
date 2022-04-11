@@ -61,12 +61,12 @@ bar_plot_b <- ggplot(summary_data_b, aes(y = avg_percent, x = Year)) + geom_bar(
   theme_linedraw() + theme(legend.position = "none") + scale_y_continuous(labels = scales::percent_format()) + ylab("Percent on Police")
 
 #save bar combined bar graph
-png("bar_plot_combined.png", width = 9, height = 4, units = "in" , res = 300)
+pdf("bar_plot_combined.pdf", width = 9, height = 4)
 plot_grid(bar_plot_a, bar_plot_b, rel_widths = c(1.28, 1), labels = c("A", "B"))
 dev.off()
 
 #save and print stacked bar graph
-ggsave("bar_plot.png", plot = bar_plot_a, width = 5, height = 4, dpi = 300)
+ggsave("bar_plot.pdf", plot = bar_plot_a, width = 5, height = 4, units = "in", dpi = 300)
 bar_plot_a
 ```
 
@@ -107,7 +107,7 @@ cities_plot <- ggplot(cities_data, aes(x = Year, y = values, fill = Category)) +
   scale_y_continuous(breaks = c(0, 500000000, 1000000000, 1500000000), labels = c("$0", "$0.5B", "$1B", "$1.5B")) + ylab("Budget")
 
 #save plot
-ggsave("cities_plot.png", plot = cities_plot, width = 8, height = 4, dpi = 300)
+ggsave("cities_plot.pdf", plot = cities_plot, width = 8, height = 4, units = "in", dpi = 300)
 ```
 
 Let's see whether the proportion spent on police scales in a meaningful way with the total general fund (log-transformed), using the data from 2019. For example, we might need to account for the fact that larger cities (like NYC and LA) hit a funding plateau for their police departments.
@@ -160,7 +160,12 @@ violin_plot <- ggplot(data, aes(x = as.factor(year), y = police, fill = as.facto
   scale_x_discrete(labels = c("2018", "2019", "2020", "2021", "2022")) + xlab("Year")
 
 #save plots
-ggsave("violin_plot.png", plot = violin_plot, width = 4, height = 4, dpi = 300)
+ggsave("violin_plot.pdf", plot = violin_plot, width = 4, height = 4, units = "in", dpi = 300)
+
+#save bar violin combined graph
+pdf("bar_violin_combined.pdf", width = 9, height = 4)
+plot_grid(bar_plot_a, violin_plot, rel_widths = c(1.28, 1), labels = c("A", "B"))
+dev.off()
 
 #print
 violin_plot
@@ -199,9 +204,9 @@ pct_change_violin_plot <- ggplot(data_pct_change, aes(x = as.factor(year), y = p
 rm(list = c("data_2018", "data_2019", "data_2020", "data_2021", "data_2022", "data_pct_change"))
 
 #save plots
-ggsave("jitter_plot.png", plot = jitter_plot, width = 4, height = 4, dpi = 300)
-ggsave("box_plot.png", plot = box_plot, width = 4, height = 4, dpi = 300)
-ggsave("pct_change_violin_plot.png", plot = pct_change_violin_plot, width = 4, height = 4, dpi = 300)
+ggsave("jitter_plot.pdf", plot = jitter_plot, width = 4, height = 4, units = "in", dpi = 300)
+ggsave("box_plot.pdf", plot = box_plot, width = 4, height = 4, units = "in", dpi = 300)
+ggsave("pct_change_violin_plot.pdf", plot = pct_change_violin_plot, width = 4, height = 4, units = "in", dpi = 300)
 ```
 
 ## Assumption Check

@@ -87,6 +87,9 @@ data <- cbind(data_p, general = data_g$general)
 Now let’s take a look at the distribution of budgets across the five
 years to see if there are any obvious patterns in the data.
 
+    ## quartz_off_screen 
+    ##                 2
+
 ![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ## Assumption Check
