@@ -80,7 +80,8 @@ data_g <- melt(data_g, id.vars = c("city", "state"))
 colnames(data_g) <- c("city", "state", "year", "general")
 data_g$year <- as.numeric(substr(data_g$year, 2, 5))
 
-#overwrite original data object
+#overwrite original data object, but keep stored as old_data
+old_data <- data
 data <- cbind(data_p, general = data_g$general)
 ```
 

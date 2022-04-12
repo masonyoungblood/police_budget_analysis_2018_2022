@@ -146,7 +146,8 @@ data_g <- melt(data_g, id.vars = c("city", "state"))
 colnames(data_g) <- c("city", "state", "year", "general")
 data_g$year <- as.numeric(substr(data_g$year, 2, 5))
 
-#overwrite original data object
+#overwrite original data object, but keep stored as old_data
+old_data <- data
 data <- cbind(data_p, general = data_g$general)
 ```
 
@@ -194,19 +195,47 @@ data_2022 <- data[which(data$year == 2022), ]
 data_pct_change <- data.frame(city = c(rep(data_2018$city, 4)),
                               year = c(rep("2018-2019", nrow(data_2018)), rep("2019-2020", nrow(data_2018)),
                                        rep("2020-2021", nrow(data_2018)), rep("2021-2022", nrow(data_2018))),
-                              pct_change = c(data_2019$police-data_2018$police,
-                                             data_2020$police-data_2019$police,
-                                             data_2021$police-data_2020$police,
-                                             data_2022$police-data_2021$police))
-pct_change_violin_plot <- ggplot(data_pct_change, aes(x = as.factor(year), y = pct_change, fill = as.factor(year))) + geom_violin() + 
+                              pct_change_police = c(((data_2019$police*data_2019$general)-(data_2018$police*data_2018$general))/(data_2018$police*data_2018$general),
+                                                    ((data_2020$police*data_2020$general)-(data_2019$police*data_2019$general))/(data_2019$police*data_2019$general),
+                                                    ((data_2021$police*data_2021$general)-(data_2020$police*data_2020$general))/(data_2020$police*data_2020$general),
+                                                    ((data_2022$police*data_2022$general)-(data_2021$police*data_2021$general))/(data_2021$police*data_2021$general)),
+                              pct_change_general = c((data_2019$general-data_2018$general)/data_2018$general,
+                                                     (data_2020$general-data_2019$general)/data_2019$general,
+                                                     (data_2021$general-data_2020$general)/data_2020$general,
+                                                     (data_2022$general-data_2021$general)/data_2021$general))
+pct_change_violin_plot_a <- ggplot(data_pct_change, aes(x = as.factor(year), y = pct_change_police, fill = as.factor(year))) + geom_violin() + 
   theme_linedraw() + theme(legend.position = "none") + 
-  scale_y_continuous(labels = scales::percent_format()) + ylab("Percent Change on Police") + xlab("Compared Years")
-rm(list = c("data_2018", "data_2019", "data_2020", "data_2021", "data_2022", "data_pct_change"))
+  scale_y_continuous(labels = scales::percent_format(), limits = c(-0.2, 0.4)) + ylab("Percent Change in Police") + xlab("Compared Years")
+pct_change_violin_plot_b <- ggplot(data_pct_change, aes(x = as.factor(year), y = pct_change_general, fill = as.factor(year))) + geom_violin() + 
+  theme_linedraw() + theme(legend.position = "none") + 
+  scale_y_continuous(labels = scales::percent_format(), limits = c(-0.2, 0.4)) + ylab("Percent Change in General") + xlab("Compared Years")
+
+#pct change line plot
+data_pct_change_lines <- data.frame(year = c("2018-2019", "2019-2020", "2020-2021", "2021-2022"),
+                                    pct_change_police = c(mean((old_data$p19-old_data$p18)/old_data$p18),
+                                                          mean((old_data$p20-old_data$p19)/old_data$p19),
+                                                          mean((old_data$p21-old_data$p20)/old_data$p20),
+                                                          mean((old_data$p22-old_data$p21)/old_data$p21)),
+                                    pct_change_general = c(mean((old_data$g19-old_data$g18)/old_data$g18),
+                                                           mean((old_data$g20-old_data$g19)/old_data$g19),
+                                                           mean((old_data$g21-old_data$g20)/old_data$g20),
+                                                           mean((old_data$g22-old_data$g21)/old_data$g21)))
+pct_change_line_plot_a <- ggplot(data_pct_change_lines, aes(x = as.factor(year), y = pct_change_police, fill = as.factor(year))) +
+  geom_line(group = 1) + geom_point() + theme_linedraw() + theme(legend.position = "none") + 
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 0.08)) + ylab("Average Percent Change in Police") + xlab("Compared Years")
+pct_change_line_plot_b <- ggplot(data_pct_change_lines, aes(x = as.factor(year), y = pct_change_general, fill = as.factor(year))) +
+  geom_line(group = 1) + geom_point() + theme_linedraw() + theme(legend.position = "none") + 
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 0.08)) + ylab("Average Percent Change in General") + xlab("Compared Years")
 
 #save plots
+pdf("pct_change_line_plot.pdf", width = 9, height = 4)
+plot_grid(pct_change_line_plot_a, pct_change_line_plot_b, labels = c("A", "B"))
+dev.off()
 ggsave("jitter_plot.pdf", plot = jitter_plot, width = 4, height = 4, units = "in", dpi = 300)
 ggsave("box_plot.pdf", plot = box_plot, width = 4, height = 4, units = "in", dpi = 300)
-ggsave("pct_change_violin_plot.pdf", plot = pct_change_violin_plot, width = 4, height = 4, units = "in", dpi = 300)
+
+#remove temporary objects
+rm(list = c("data_2018", "data_2019", "data_2020", "data_2021", "data_2022", "data_pct_change", "data_pct_change_lines"))
 ```
 
 ## Assumption Check
