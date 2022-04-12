@@ -107,7 +107,7 @@ cities_plot <- ggplot(cities_data, aes(x = Year, y = values, fill = Category)) +
   scale_y_continuous(breaks = c(0, 500000000, 1000000000, 1500000000), labels = c("$0", "$0.5B", "$1B", "$1.5B")) + ylab("Budget")
 
 #save plot
-ggsave("cities_plot.pdf", plot = cities_plot, width = 8, height = 4, units = "in", dpi = 300)
+ggsave("cities_plot.pdf", plot = cities_plot, width = 9, height = 4, units = "in", dpi = 300)
 ```
 
 Let's see whether the proportion spent on police scales in a meaningful way with the total general fund (log-transformed), using the data from 2019. For example, we might need to account for the fact that larger cities (like NYC and LA) hit a funding plateau for their police departments.
@@ -220,17 +220,17 @@ data_pct_change_lines <- data.frame(year = c("2018-2019", "2019-2020", "2020-202
                                                            mean((old_data$g20-old_data$g19)/old_data$g19),
                                                            mean((old_data$g21-old_data$g20)/old_data$g20),
                                                            mean((old_data$g22-old_data$g21)/old_data$g21)))
-pct_change_line_plot_a <- ggplot(data_pct_change_lines, aes(x = as.factor(year), y = pct_change_police, fill = as.factor(year))) +
-  geom_line(group = 1) + geom_point() + theme_linedraw() + theme(legend.position = "none") + 
-  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 0.08)) + ylab("Average Percent Change in Police") + xlab("Compared Years")
-pct_change_line_plot_b <- ggplot(data_pct_change_lines, aes(x = as.factor(year), y = pct_change_general, fill = as.factor(year))) +
-  geom_line(group = 1) + geom_point() + theme_linedraw() + theme(legend.position = "none") + 
-  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 0.08)) + ylab("Average Percent Change in General") + xlab("Compared Years")
+pct_change_line_plot <- ggplot(data_pct_change_lines, aes(x = as.factor(year))) +
+  theme_linedraw() + xlab("Compared Years") +
+  geom_line(aes(y = pct_change_police, group = 1, color = line_colors[1])) +
+  geom_point(aes(y = pct_change_police, group = 1, color = line_colors[1])) +
+  geom_line(aes(y = pct_change_general, group = 1, color = line_colors[2])) +
+  geom_point(aes(y = pct_change_general, group = 1, color = line_colors[2])) +
+  scale_y_continuous(name = "Average Percent Change", labels = scales::percent_format(), limits = c(0, 0.08)) + 
+  labs(color = "Category") + scale_color_discrete(labels = c("General", "Police"))
 
 #save plots
-pdf("pct_change_line_plot.pdf", width = 9, height = 4)
-plot_grid(pct_change_line_plot_a, pct_change_line_plot_b, labels = c("A", "B"))
-dev.off()
+ggsave("pct_change_line_plot.pdf", plot = pct_change_line_plot, width = 5, height = 4, units = "in", dpi = 300)
 ggsave("jitter_plot.pdf", plot = jitter_plot, width = 4, height = 4, units = "in", dpi = 300)
 ggsave("box_plot.pdf", plot = box_plot, width = 4, height = 4, units = "in", dpi = 300)
 
