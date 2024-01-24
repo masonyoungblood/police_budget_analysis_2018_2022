@@ -3,8 +3,8 @@ Police Budget Analysis (2018-2022)
 Mason Youngblood
 3/23/2022
 
-This analysis was conducted for a collaborative article with [Andy
-Friedman](https://github.com/afriedman412).
+This analysis was conducted for the article ["Nobody defunded the police: a study"](https://therealnews.com/nobody-defunded-the-police-a-study) co-authored with [Andy
+Friedman](https://github.com/afriedman412) for the [Real News Network](https://therealnews.com/).
 
 ## Loading & Data Summary
 
